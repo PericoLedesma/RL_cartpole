@@ -7,7 +7,7 @@ Notes:
 action_space = Discrete(2)  # Example: action = 0 (left), action = 1 (right)
 Reward = steps, binary, where the agent receives +1 for every step it balances the pole.
 
-# To change thresold: /Users/pedrorodriguezdeledesmajimenez/anaconda3/envs/general/lib/python3.11/site-packages/gym/envs/classic_control/cartpole.py
+# To change thresold: **/anaconda3/envs/general/lib/python3.11/site-packages/gym/envs/classic_control/cartpole.py
 '''
 
 MAX_EPISODE_STEPS = 500  # Default should be 500

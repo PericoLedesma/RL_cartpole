@@ -1,13 +1,10 @@
 import numpy as np
-import os
 import random
 import json
 from collections import deque
 import torch as T  # PyTorch library for ML and DL
-import torch.nn as nn  # PyTorch's neural network module
 import torch.nn.functional as F  # PyTorch's functional module
 from torch.distributions import Categorical
-
 
 from model import Network
 from utils import *
@@ -50,6 +47,16 @@ class AC_Agent:
                                 self.lr,
                                 self.replay).to(self.device)
 
+        self.ActorNet_target = Network('Actor',
+                                       env_class.env.observation_space.shape[0],
+                                       hidden_layers,
+                                       len(self.action_space),
+                                       self.lr,
+                                       self.replay,
+                                       False).to(self.device)
+
+        self.ActorNet_target.load_state_dict(self.ActorNet.state_dict())
+
         # Critic network (Value)
         self.CriticNet = Network('Critic',
                                  env_class.env.observation_space.shape[0],
@@ -57,6 +64,14 @@ class AC_Agent:
                                  1,
                                  self.lr,
                                  self.replay).to(self.device)
+        self.CriticNet_target = Network('Critic',
+                                        env_class.env.observation_space.shape[0],
+                                        hidden_layers,
+                                        1,
+                                        self.lr,
+                                        self.replay,
+                                        False).to(self.device)
+        self.CriticNet_target.load_state_dict(self.CriticNet.state_dict())
 
         self.action_space = T.tensor(self.action_space, dtype=T.float).to(self.device)
 
@@ -65,18 +80,16 @@ class AC_Agent:
             state = T.tensor(np.array(observation), dtype=T.float).to(self.device)
             logits = self.ActorNet.forward(state)
             categorical_dist = Categorical(logits=logits)
-            return categorical_dist.sample().item() # return index of the action
-
+            return categorical_dist.sample().item()  # return index of the action
 
     def memory_replay(self, batch_size):
-        #print(f' ---------- Memory Replay... batch size={batch_size} -------')
+        print(f' ---------- Memory Replay... batch size={batch_size} -------')
         # memory array: [(eps, eps_data), (eps, eps_data), ...]
         batches: list = random.sample(self.memory, batch_size)  # list of tuples
         eps, eps_data = zip(*batches)  # : tuple of lists
 
         for data in eps_data:
             self.policy_update(data)
-
 
     def policy_update(self, eps_data: list) -> None:
         # eps_data: np.ndarray with all the data of the episode
@@ -97,7 +110,6 @@ class AC_Agent:
         reward_len = len(eps_rewards)
         for j in reversed(range(reward_len)):
             cum_rewards[j] = eps_rewards[j] + (cum_rewards[j + 1] * self.gamma if j + 1 < reward_len else 0)
-
 
         # CRITIC - Optimize value loss (Critic)
         self.CriticNet.optimizer.zero_grad()
@@ -180,7 +192,6 @@ class AC_Agent:
         print(f'*** Saving Models {self.agent_name} parameters ...')
         self.ActorNet.save(self.replay)
         self.CriticNet.save(self.replay)
-
 
     def gpu_use(self):
         if not T.backends.mps.is_available():

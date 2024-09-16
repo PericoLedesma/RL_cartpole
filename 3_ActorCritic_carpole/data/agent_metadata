@@ -1,0 +1,34 @@
+{
+    "model_64_replayTrue": {
+        "n_games": 1000,
+        "mean_score": 32.51
+    },
+    "model_64_replayFalse": {
+        "n_games": 1000,
+        "mean_score": 493.76
+    },
+    "model_128_replayTrue": {
+        "n_games": 1000,
+        "mean_score": 29.04
+    },
+    "model_128_replayFalse": {
+        "n_games": 1000,
+        "mean_score": 472.05
+    },
+    "model_256_replayTrue": {
+        "n_games": 1000,
+        "mean_score": 63.85
+    },
+    "model_256_replayFalse": {
+        "n_games": 1000,
+        "mean_score": 481.56
+    },
+    "model_64_128_replayTrue": {
+        "n_games": 1000,
+        "mean_score": 181.89
+    },
+    "model_64_128_replayFalse": {
+        "n_games": 1000,
+        "mean_score": 485.38
+    }
+}

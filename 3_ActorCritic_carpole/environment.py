@@ -1,8 +1,6 @@
 # Libraries
 import time
-from stable_baselines3.common.monitor import Monitor
 import gymnasium as gym
-from IPython.display import clear_output
 
 # Files
 from utils import *
@@ -57,9 +55,13 @@ class EnvironmentClass:
                 agent.memory.append((eps, eps_data))
 
                 # Long memory, replay memory. If we have more than X memories
-                if agent.replay: # Just for test, but it makes the agent play worse
+                if agent.replay and len(agent.memory) > batch_size * 4: # Just for test, but it makes the agent play worse
+                    if eps % 10 == 0:
+                        agent.ActorNet_target.load_state_dict(agent.ActorNet.state_dict())
+                        agent.CriticNet_target.load_state_dict(agent.CriticNet.state_dict())
                     if len(agent.memory) > batch_size:
                         agent.memory_replay(batch_size)
+
 
 
         except KeyboardInterrupt:

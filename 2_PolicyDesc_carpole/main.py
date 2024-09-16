@@ -20,7 +20,7 @@ def main():
 
     # ------------------ AGENTS  ------------------ #
     agents = {}
-    for hidden_layers in [[16],[64],[128]]: # , [128, 128], [256]
+    for hidden_layers in [[16],[32],[64], [128]]: # , [128, 128], [256]
         agents[f"model_{hidden_layers}"] = GD_Agent(env_class=env_class,
                                                     lr=0.001,
                                                     gamma=0.99,
@@ -31,6 +31,7 @@ def main():
         env_class.run_env(agent,
                           n_episodes=1000,
                           max_ep_steps=MAX_EPISODE_STEPS,
+                          batch_size=32,
                           mean_batch=50,
                           plot_eps_inf_every=50,
                           plot=False,

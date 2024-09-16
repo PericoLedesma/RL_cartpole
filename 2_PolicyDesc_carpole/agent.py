@@ -1,10 +1,6 @@
 import numpy as np
-import os
-import random
 import json
-from collections import deque
 import torch as T  # PyTorch library for ML and DL
-import torch.nn as nn  # PyTorch's neural network module
 import torch.nn.functional as F  # PyTorch's functional module
 from torch.distributions import Categorical
 
@@ -34,8 +30,6 @@ class GD_Agent:
         self.lr = lr  # Learning rate
         self.gamma = gamma  # Discount factor
 
-        self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-
         self.agent_parameters()
 
         self.PolicyPi = Network(env_class.env.observation_space.shape[0], hidden_layers, len(self.action_space), self.lr)
@@ -49,14 +43,6 @@ class GD_Agent:
         return categorical_dist.sample().item() # index of the action= 0 or 1= action
 
 
-    def get_policy(self, obs):
-        logits = self.PolicyPi(obs)
-        return Categorical(logits=logits)
-
-    def compute_loss(self, obs, act, weights):
-        logp = self.get_policy(obs).log_prob(act)
-        return -(logp * weights).mean()
-
     def reward_to_go(self, rews):
         n = len(rews)
         rtgs = T.zeros_like(rews)
@@ -64,57 +50,23 @@ class GD_Agent:
             rtgs[i] = rews[i] + (rtgs[i + 1] if i + 1 < n else 0)
         return rtgs
 
-    def policy_update2(self, eps_data: list) -> None:
-
+    def policy_update(self, eps_data: list) -> None:
         eps, eps_states, eps_actions, eps_rewards = zip(*eps_data)
         eps_states = T.tensor(np.array(eps_states), dtype=T.float).to(self.PolicyPi.device)
         eps_actions = T.tensor(np.array(eps_actions), dtype=T.int).to(self.PolicyPi.device)
         eps_rewards = T.tensor(np.array(eps_rewards), dtype=T.float).to(self.PolicyPi.device)
 
+        cum_reward = self.reward_to_go(eps_rewards)
+
+        logits = self.PolicyPi(eps_states)
+        prob_distri = Categorical(logits=logits)
+        log_prob = prob_distri.log_prob(eps_actions)
+        batch_loss = -(log_prob * cum_reward).mean()
+
         self.PolicyPi.optimizer.zero_grad()
-        batch_weights = self.reward_to_go(eps_rewards)
-
-        batch_loss = self.compute_loss(obs=eps_states,
-                                  act=eps_actions,
-                                  weights=batch_weights)
-
         batch_loss.backward()
         self.PolicyPi.optimizer.step()
 
-    def policy_update(self, eps_data: list) -> None:
-        # eps_data: np.ndarray with all the data of the episode
-        # print(' ---------- Learning... -------')
-
-        eps, eps_states, eps_actions, eps_rewards = zip(*eps_data)
-        eps_states = T.tensor(np.array(eps_states), dtype=T.float).to(self.PolicyPi.device)
-        eps_actions = T.tensor(np.array(eps_actions), dtype=T.int).to(self.PolicyPi.device)
-        eps_rewards = T.tensor(np.array(eps_rewards), dtype=T.float).to(self.PolicyPi.device)
-
-        # print('eps_states', eps_states.shape, '| eps_actions', eps_actions.shape, '| eps_rewards', eps_rewards.shape)
-
-        ep_ret, ep_len = sum(eps_rewards), len(eps_rewards)
-        # print(f"Episode {eps_rewards} | ep_ret={ep_ret} | ep_len={ep_len}")
-
-        # # REWARDS OF EACH STEP
-        cum_rewards = T.zeros_like(eps_rewards)
-        reward_len = len(eps_rewards)
-        for j in reversed(range(reward_len)):
-            cum_rewards[j] = eps_rewards[j] + (cum_rewards[j + 1] * self.gamma if j + 1 < reward_len else 0)
-
-        # Raw values for each action in s state
-        logits = self.PolicyPi(eps_states)
-
-        # Calculate negative log probability (-log P) as loss.
-        # Cross-entropy loss is -log P in categorical distribution.
-        log_probs = -F.cross_entropy(logits, eps_actions, reduction="none") # TODO
-
-        loss = T.mean(-log_probs * cum_rewards)
-        # loss = -log_probs * ep_ret.item() # * ep_len
-
-        self.PolicyPi.optimizer.zero_grad()
-        # loss.sum().backward()
-        loss.backward()
-        self.PolicyPi.optimizer.step()
 
     def agent_parameters(self):
         if os.path.exists(METADATA_FILE):
@@ -175,3 +127,38 @@ class GD_Agent:
     def save(self):
         print(f'*** Saving model {self.agent_name} parameters ...', end=" ")
         self.PolicyPi.save()
+
+
+    def policy_update2(self, eps_data: list) -> None:
+        # eps_data: np.ndarray with all the data of the episode
+        # print(' ---------- Learning... -------')
+
+        eps, eps_states, eps_actions, eps_rewards = zip(*eps_data)
+        eps_states = T.tensor(np.array(eps_states), dtype=T.float).to(self.PolicyPi.device)
+        eps_actions = T.tensor(np.array(eps_actions), dtype=T.int).to(self.PolicyPi.device)
+        eps_rewards = T.tensor(np.array(eps_rewards), dtype=T.float).to(self.PolicyPi.device)
+
+        # print('eps_states', eps_states.shape, '| eps_actions', eps_actions.shape, '| eps_rewards', eps_rewards.shape)
+
+        ep_ret, ep_len = sum(eps_rewards), len(eps_rewards)
+        # print(f"Episode {eps_rewards} | ep_ret={ep_ret} | ep_len={ep_len}")
+
+        # # REWARDS OF EACH STEP
+        cum_rewards = T.zeros_like(eps_rewards)
+        reward_len = len(eps_rewards)
+        for j in reversed(range(reward_len)):
+            cum_rewards[j] = eps_rewards[j] + (cum_rewards[j + 1] * self.gamma if j + 1 < reward_len else 0)
+
+        # Raw values for each action in s state
+        logits = self.PolicyPi(eps_states)
+
+        # Calculate negative log probability (-log P) as loss.
+        # Cross-entropy loss is -log P in categorical distribution.
+        log_probs = -F.cross_entropy(logits, eps_actions, reduction="none")
+        loss = (-log_probs * cum_rewards).sum()
+
+        # loss = T.mean(-log_probs * cum_rewards)
+
+        self.PolicyPi.optimizer.zero_grad()
+        loss.backward()
+        self.PolicyPi.optimizer.step()

@@ -6,7 +6,7 @@ MODEL_FILE = 'AC_cartpole_weights'
 
 
 class Network(nn.Module):
-    def __init__(self, name, input_size, hidden_layers, output_size, lr, replay):
+    def __init__(self, name, input_size, hidden_layers, output_size, lr, replay, load_model=True):
         """
         Args:
             input_size (int): The size of the input features.
@@ -37,7 +37,8 @@ class Network(nn.Module):
         self.loss = nn.MSELoss()
         self.optimizer = T.optim.Adam(self.parameters(), lr=lr)
 
-        self.load_model(replay)
+        if load_model:
+            self.load_model(replay)
 
     def forward(self, state) -> T.tensor:  # logits
         input_weights = state

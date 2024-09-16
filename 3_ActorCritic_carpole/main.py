@@ -7,7 +7,7 @@ Notes:
 action_space = Discrete(2)  # Example: action = 0 (left), action = 1 (right)
 Reward = steps, binary, where the agent receives +1 for every step it balances the pole.
 
-To change thresold: /Users/pedrorodriguezdeledesmajimenez/anaconda3/envs/general/lib/python3.11/site-packages/gym/envs/classic_control/cartpole.py
+To change thresold: **/anaconda3/envs/general/lib/python3.11/site-packages/gym/envs/classic_control/cartpole.py
 
 
 '''
@@ -25,7 +25,7 @@ def main():
 
     # ------------------ AGENTS  ------------------ #
     agents = {}
-    for layers in [[64], [128]]:  # , [128, 128], [256]
+    for layers in [[64], [128],[256],[64,128]]:  # , [128, 128], [256]
         for replay in [True, False]:
             key_model = f"model_{layers}_replay{replay}"
             agents[key_model] = AC_Agent(env_class=env_class,
@@ -37,7 +37,7 @@ def main():
     # ------------------ TRAINING  ------------------ #
     for agent in agents.values():
         env_class.run_env(agent,
-                          n_episodes=750,
+                          n_episodes=1000,
                           batch_size=64, # 64
                           max_ep_steps=MAX_EPISODE_STEPS,
                           mean_batch=100,

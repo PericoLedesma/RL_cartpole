@@ -13,7 +13,7 @@ class EnvironmentClass:
                             render_mode=render_mode)  # 'human ' or 'rgb_array', 'ansi'
         print('\tEnvironment Created. Action space: ', self.env.action_space, ' | Observation space: ', self.env.observation_space)
 
-    def run_env(self, agent, n_episodes, max_ep_steps, mean_batch, plot_eps_inf_every, plot, save_plot) -> None:
+    def run_env(self, agent, n_episodes, max_ep_steps,batch_size, mean_batch, plot_eps_inf_every, plot, save_plot) -> None:
         print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPISODES')
         start_time = time.perf_counter()
 
@@ -47,7 +47,8 @@ class EnvironmentClass:
                     print(f"[Episode {eps}] Total Reward = {score:.2f}| Mean score = {np.mean(reward_history[-mean_batch:]):.2f}", end="\r")
 
                 # Policy descent
-                agent.policy_update2(eps_data)
+                agent.policy_update(eps_data)
+                # agent.policy_update2(eps_data)
 
 
 
