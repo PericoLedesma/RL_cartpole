@@ -1,20 +1,23 @@
 # Libraries
 import time
 import gymnasium as gym
+import json
 
 # Files
 from utils import *
 
+METADATA_FILE = 'data/agent_AC_metadata'
 class EnvironmentClass:
     def __init__(self, env_id, render_mode, max_ep_steps) -> None:
         print(f'\n ****** Creating Environment {env_id} ... ******')
         self.env = gym.make(env_id,
                             max_episode_steps=max_ep_steps,
                             render_mode=render_mode)
-        print('\tEnvironment Created. Action space: ', self.env.action_space, ' | Observation space: ', self.env.observation_space)
+        # print('\tEnvironment Created. Action space: ', self.env.action_space, ' | Observation space: ', self.env.observation_space)
+        self.print_metadata()
 
-    def run_env(self, agent, n_episodes, batch_size, max_ep_steps, mean_batch, plot_eps_inf_every, plot, save_plot) -> None:
-        print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPISODES')
+    def run_env(self, agent, n_episodes, batch_size, max_ep_steps, plot_eps_inf_every, plot, save_plot, note) -> None:
+        print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPOCHS\n')
         start_time = time.perf_counter()
 
         reward_history, state_evolution = [], []
@@ -45,7 +48,7 @@ class EnvironmentClass:
                 reward_history.append(score)
 
                 if eps % plot_eps_inf_every == 0:
-                    print(f"[Episode {eps}] Total Reward = {score:.2f}| Mean score = {np.mean(reward_history[-mean_batch:]):.2f}", end="\r")
+                    print(f"[Epoch {eps}] Reward = {score:.d}| avg_score_100={np.mean(reward_history[-100:]):.2f}| avg_score_50={np.mean(reward_history[-50:]):.2f}")
 
                 # Policy descent
                 agent.policy_update(eps_data)
@@ -63,20 +66,30 @@ class EnvironmentClass:
                         agent.memory_replay(batch_size)
 
 
-
         except KeyboardInterrupt:
             print('\n*Training Interrupted')
 
         finally:
             elapsed_time = time.perf_counter() - start_time
-            print(f'\nTraining Completed, executed in {int(elapsed_time // 60)} minutes and {elapsed_time % 60:.2f} seconds', '\n', '-' * 60)
-        agent.save()
-        agent.store_agent_parameters(np.mean(reward_history[-mean_batch:]))
+            print(f'\nTraining Completed, executed in {int(elapsed_time // 60)} minutes and {elapsed_time % 60:.0f} seconds', '\n', '-' * 60)
+        # agent.save()
+        agent.store_agent_parameters(np.mean(reward_history[-500:]), np.mean(reward_history[-100:]), note)
         print('=' * 60)
         # ------------------ PLOTTING RESULTS ------------------ #
 
         plot_rewards(reward_history, max_ep_steps, agent, plot, save_plot)
 
+    def print_metadata(self):
+        if os.path.exists(METADATA_FILE):
+            with open(METADATA_FILE, 'r') as f:
+                metadata = json.load(f)
+
+            print('\n====>Models metadata... ')
+            for model, date in metadata.items():
+                print(f"\t\t-->{model} : ")
+                for date, data in date.items():
+                    print(f"\t\t\t]{date}] : {data}")
     def close(self):
         self.env.close()
         print('\n\n ****** Environment Closed ******\n\n')
+        self.print_metadata()

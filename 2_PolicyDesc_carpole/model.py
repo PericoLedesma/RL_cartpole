@@ -23,10 +23,12 @@ class Network(nn.Module):
 
         layers = []
 
-        layers.append(nn.Linear(input_size, hidden_layers[0]))
+        layers.append(nn.Sequential(nn.Linear(input_size, hidden_layers[0]),
+                                    nn.ReLU()))
         if len(hidden_layers) > 1:
             for i in range(1, len(hidden_layers)):
-                layers.append(nn.Linear(hidden_layers[i - 1], hidden_layers[i]))
+                layers.append(nn.Sequential(nn.Linear(hidden_layers[i - 1], hidden_layers[i]),
+                                            nn.ReLU()))
         layers.append(nn.Linear(hidden_layers[-1], output_size))
 
         # Register all layers using nn.ModuleList
@@ -42,10 +44,10 @@ class Network(nn.Module):
             self.device = T.device("mps")
         self.to(self.device)
 
-        self.load_model()
+        # self.load_model()
 
 
-    def  forward(self, state) -> T.tensor: # logits
+    def forward(self, state) -> T.tensor: # logits
         input_weights = state
         for layer in self.layers[:-1]:
             input_weights = T.relu(layer(input_weights))

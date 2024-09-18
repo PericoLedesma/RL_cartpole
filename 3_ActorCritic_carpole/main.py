@@ -37,14 +37,15 @@ def main():
     # ------------------ TRAINING  ------------------ #
     for agent in agents.values():
         env_class.run_env(agent,
-                          n_episodes=1000,
-                          batch_size=64, # 64
+                          n_episodes=400,
+                          batch_size=8,
                           max_ep_steps=MAX_EPISODE_STEPS,
-                          mean_batch=100,
-                          plot_eps_inf_every=1,
+                          plot_eps_inf_every=10,
                           plot=False,
-                          save_plot=True)
+                          save_plot=True,
+                          note='Whats new?')
 
+    # ------------------ THE END  ------------------ #
     env_class.close()
 
 

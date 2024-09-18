@@ -11,7 +11,7 @@ from utils import *
 # -----------------------------
 MAX_MEMORY = 100_000
 
-METADATA_FILE = 'data/agent_metadata'
+METADATA_FILE = 'data/agent_PG_metadata'
 
 
 class GD_Agent:
@@ -30,7 +30,7 @@ class GD_Agent:
         self.lr = lr  # Learning rate
         self.gamma = gamma  # Discount factor
 
-        self.agent_parameters()
+        self.n_games = 0
 
         self.PolicyPi = Network(env_class.env.observation_space.shape[0], hidden_layers, len(self.action_space), self.lr)
 
@@ -61,6 +61,7 @@ class GD_Agent:
         logits = self.PolicyPi(eps_states)
         prob_distri = Categorical(logits=logits)
         log_prob = prob_distri.log_prob(eps_actions)
+
         batch_loss = -(log_prob * cum_reward).mean()
 
         self.PolicyPi.optimizer.zero_grad()
@@ -68,37 +69,9 @@ class GD_Agent:
         self.PolicyPi.optimizer.step()
 
 
-    def agent_parameters(self):
-        if os.path.exists(METADATA_FILE):
-            with open(METADATA_FILE, 'r') as f:
-                metadata = json.load(f)
-
-            print('\tModels metadata loaded: ')
-            for key, value in metadata.items():
-                print(f"\t\t{key} : {value}")
-
-            if self.agent_name not in metadata.keys():
-                print(f"\tNo metadata for {self.agent_name}")
-                self.n_games = 0
-                self.init_mean_score = 0
-            else:
-                print(f"\tLoading metadata for {self.agent_name}...", end=" ")
-
-                required_keys = {'n_games', 'mean_score'}
-                if required_keys <= metadata[self.agent_name].keys():
-                    self.n_games = metadata[self.agent_name]['n_games']
-                    self.init_mean_score = metadata[self.agent_name]['mean_score']
-                    print(f"Agent metadata loaded successfully ==> N_games= {self.n_games} | Mean_score={self.init_mean_score:.2f}")
-                else:
-                    print(f"The file {METADATA_FILE} is missing some required keys. ERROR")
-
-        else:
-            print(f"\tNo metadata of the agent found. Starting from scratch. Games played: 0.")
-            self.n_games = 0
-            self.init_mean_score = 0
-
-    def store_agent_parameters(self, mean_score):
+    def store_agent_parameters(self, mean_score_500, mean_score_100, note):
         # print(f"Storing agent {self.agent_name} metadata ... ==> N_games= {self.n_games} | Mean_score={self.init_mean_score:.2f} > {mean_score}")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         if os.path.exists(METADATA_FILE):
             with open(METADATA_FILE, 'r') as f:
@@ -107,22 +80,46 @@ class GD_Agent:
             if self.agent_name not in metadata.keys():
                 metadata[self.agent_name] = {}
 
-            metadata[self.agent_name]['n_games'] = self.n_games
-            metadata[self.agent_name]['mean_score'] = mean_score
+            metadata[self.agent_name][current_time] = {}
+
+            metadata[self.agent_name][current_time]['n_games'] = self.n_games
+            metadata[self.agent_name][current_time]['mean_score_500'] = mean_score_500
+            metadata[self.agent_name][current_time]['mean_score_100'] = mean_score_100
+            metadata[self.agent_name][current_time]['note'] = 'NOTE'
 
         else:
-            metadata = {self.agent_name: {'n_games': self.n_games, 'mean_score': mean_score}}
             directory = os.path.dirname(METADATA_FILE)
-
             if not os.path.exists(directory):
                 os.makedirs(directory)
+
+            metadata = {self.agent_name: {
+                current_time: {
+                    'n_games': self.n_games,
+                    'mean_score_500': mean_score_500,
+                    'mean_score_100': mean_score_100,
+                    'note': 'NOTE'}
+            }}
 
         with open(METADATA_FILE, 'w') as f:
             json.dump(metadata, f, indent=4)
 
-        print(f'*** Model {self.agent_name} metadata saved. Mean score: {self.init_mean_score} -> {mean_score}. ')
-        for key, value in metadata.items():
-            print(f"\t-> {key} : {value}")
+        print(f'*** Model {self.agent_name} metadata saved | mean_score_500: {mean_score_500} | mean_score_100: {mean_score_100} ')
+        for model, date in metadata.items():
+            print(f"\t\t-->{model} : ")
+            for date, data in date.items():
+                print(f"\t\t\t]{date}] : {data}")
+
+    def print_metadata(self):
+        if os.path.exists(METADATA_FILE):
+            with open(METADATA_FILE, 'r') as f:
+                metadata = json.load(f)
+
+            print('\tModels metadata... ')
+            for model, date in metadata.items():
+                print(f"\t\t-->{model} : ")
+                for date, data in date.items():
+                    print(f"\t\t\t]{date}] : {data}")
+
 
     def save(self):
         print(f'*** Saving model {self.agent_name} parameters ...', end=" ")

@@ -26,15 +26,18 @@ class DeepQNetwork(nn.Module):
         layers = []
 
         # Input to first hidden layer
-        layers.append(nn.Linear(input_size, hidden_layers[0]))
+        layers.append(nn.Sequential(nn.Linear(input_size, hidden_layers[0]),
+                                    nn.ReLU()))
 
         # Create the hidden layers dynamically
         if len(hidden_layers) > 1:
             for i in range(1, len(hidden_layers)):
-                layers.append(nn.Linear(hidden_layers[i - 1], hidden_layers[i]))
+                layers.append(nn.Sequential(nn.Linear(hidden_layers[i - 1], hidden_layers[i]),
+                                            nn.ReLU()))
 
         # Output layer (from the last hidden layer to the output)
         layers.append(nn.Linear(hidden_layers[-1], output_size))
+
 
         # Register all layers using nn.ModuleList
         self.layers = nn.ModuleList(layers)
@@ -50,7 +53,7 @@ class DeepQNetwork(nn.Module):
             self.device = T.device("mps")
         self.to(self.device)
 
-        self.load_model()
+        # self.load_model()
 
 
 

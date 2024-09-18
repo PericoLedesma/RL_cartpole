@@ -6,12 +6,12 @@ import torch as T  # PyTorch library for ML and DL
 import torch.nn.functional as F  # PyTorch's functional module
 from torch.distributions import Categorical
 
-from model import Network
+from model import *
 from utils import *
 
 # -----------------------------
 MAX_MEMORY = 100_000
-METADATA_FILE = 'data/agent_metadata'
+METADATA_FILE = 'data/agent_AC_metadata'
 
 
 class AC_Agent:
@@ -35,42 +35,35 @@ class AC_Agent:
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.replay = replay
 
-        self.agent_parameters()
-
+        self.n_games = 0
         self.gpu_use()
 
         # Actor network (Policy)
-        self.ActorNet = Network('Actor',
-                                env_class.env.observation_space.shape[0],
-                                hidden_layers,
-                                len(self.action_space),
-                                self.lr,
-                                self.replay).to(self.device)
+        self.ActorNet = ActorNetwork('Actor',
+                                     env_class.env.observation_space.shape[0],
+                                     hidden_layers,
+                                     len(self.action_space),
+                                     self.lr).to(self.device)
 
-        self.ActorNet_target = Network('Actor',
-                                       env_class.env.observation_space.shape[0],
-                                       hidden_layers,
-                                       len(self.action_space),
-                                       self.lr,
-                                       self.replay,
-                                       False).to(self.device)
+        self.ActorNet_target = ActorNetwork('Actor_target',
+                                            env_class.env.observation_space.shape[0],
+                                            hidden_layers,
+                                            len(self.action_space),
+                                            self.lr).to(self.device)
 
         self.ActorNet_target.load_state_dict(self.ActorNet.state_dict())
 
         # Critic network (Value)
-        self.CriticNet = Network('Critic',
-                                 env_class.env.observation_space.shape[0],
-                                 hidden_layers,
-                                 1,
-                                 self.lr,
-                                 self.replay).to(self.device)
-        self.CriticNet_target = Network('Critic',
-                                        env_class.env.observation_space.shape[0],
-                                        hidden_layers,
-                                        1,
-                                        self.lr,
-                                        self.replay,
-                                        False).to(self.device)
+        self.CriticNet = CriticNetwork('Critic',
+                                       env_class.env.observation_space.shape[0],
+                                       hidden_layers,
+                                       1,
+                                       self.lr).to(self.device)
+        self.CriticNet_target = CriticNetwork('Critic_target',
+                                              env_class.env.observation_space.shape[0],
+                                              hidden_layers,
+                                              1,
+                                              self.lr).to(self.device)
         self.CriticNet_target.load_state_dict(self.CriticNet.state_dict())
 
         self.action_space = T.tensor(self.action_space, dtype=T.float).to(self.device)
@@ -83,13 +76,15 @@ class AC_Agent:
             return categorical_dist.sample().item()  # return index of the action
 
     def memory_replay(self, batch_size):
-        print(f' ---------- Memory Replay... batch size={batch_size} -------')
+        # print(f' ---------- Memory Replay... batch size={batch_size} -------')
         # memory array: [(eps, eps_data), (eps, eps_data), ...]
         batches: list = random.sample(self.memory, batch_size)  # list of tuples
         eps, eps_data = zip(*batches)  # : tuple of lists
 
-        for data in eps_data:
+        for count, data in enumerate(eps_data):
+            print(f'Memory replay {count}', end='\r')
             self.policy_update(data)
+        print(f'Memory replay batch {batch_size}.')
 
     def policy_update(self, eps_data: list) -> None:
         # eps_data: np.ndarray with all the data of the episode
@@ -101,9 +96,6 @@ class AC_Agent:
         eps_rewards = T.tensor(np.array(eps_rewards), dtype=T.float).to(self.device)
 
         # print('eps_states', eps_states.shape, '| eps_actions', eps_actions.shape, '| eps_rewards', eps_rewards.shape)
-
-        ep_ret, ep_len = sum(eps_rewards), len(eps_rewards)
-        # print(f"Episode {eps_rewards} | ep_ret={ep_ret} | ep_len={ep_len}")
 
         # # REWARDS OF EACH STEP
         cum_rewards = T.zeros_like(eps_rewards)
@@ -133,37 +125,10 @@ class AC_Agent:
         pi_loss.sum().backward()
         self.ActorNet.optimizer.step()
 
-    def agent_parameters(self):
-        if os.path.exists(METADATA_FILE):
-            with open(METADATA_FILE, 'r') as f:
-                metadata = json.load(f)
-
-            print('\tModels metadata loaded: ')
-            for key, value in metadata.items():
-                print(f"\t\t{key} : {value}")
-
-            if self.agent_name not in metadata.keys():
-                print(f"\tNo metadata for {self.agent_name}")
-                self.n_games = 0
-                self.init_mean_score = 0
-            else:
-                print(f"\tLoading metadata for {self.agent_name}...", end=" ")
-
-                required_keys = {'n_games', 'mean_score'}
-                if required_keys <= metadata[self.agent_name].keys():
-                    self.n_games = metadata[self.agent_name]['n_games']
-                    self.init_mean_score = metadata[self.agent_name]['mean_score']
-                    print(f"Agent metadata loaded successfully ==> N_games= {self.n_games} | Mean_score={self.init_mean_score:.2f}")
-                else:
-                    print(f"The file {METADATA_FILE} is missing some required keys. ERROR")
-
-        else:
-            print(f"\tNo metadata of the agent found. Starting from scratch. Games played: 0.")
-            self.n_games = 0
-            self.init_mean_score = 0
-
-    def store_agent_parameters(self, mean_score):
+    def store_agent_parameters(self, mean_score_500, mean_score_100, note):
         # print(f"Storing agent {self.agent_name} metadata ... ==> N_games= {self.n_games} | Mean_score={self.init_mean_score:.2f} > {mean_score}")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+
         if os.path.exists(METADATA_FILE):
             with open(METADATA_FILE, 'r') as f:
                 metadata = json.load(f)
@@ -171,27 +136,42 @@ class AC_Agent:
             if self.agent_name not in metadata.keys():
                 metadata[self.agent_name] = {}
 
-            metadata[self.agent_name]['n_games'] = self.n_games
-            metadata[self.agent_name]['mean_score'] = mean_score
+            metadata[self.agent_name][current_time] = {}
+
+            metadata[self.agent_name][current_time]['n_games'] = self.n_games
+            metadata[self.agent_name][current_time]['mean_score_500'] = mean_score_500
+            metadata[self.agent_name][current_time]['mean_score_100'] = mean_score_100
+            metadata[self.agent_name][current_time]['note'] = note
 
         else:
-            metadata = {self.agent_name: {'n_games': self.n_games, 'mean_score': mean_score}}
             directory = os.path.dirname(METADATA_FILE)
-
             if not os.path.exists(directory):
                 os.makedirs(directory)
 
+            metadata = {self.agent_name: {
+                current_time: {
+                    'n_games': self.n_games,
+                    'mean_score_500': mean_score_500,
+                    'mean_score_100': mean_score_100,
+                    'note': 'NOTE'}
+            }}
         with open(METADATA_FILE, 'w') as f:
             json.dump(metadata, f, indent=4)
 
-        print(f'*** Model {self.agent_name} metadata saved. Mean score: {self.init_mean_score} -> {mean_score}. ')
-        for key, value in metadata.items():
-            print(f"\t-> {key} : {value}")
+        print(f'*** Model {self.agent_name} metadata saved | mean_score_500: {mean_score_500} | mean_score_100: {mean_score_100} ')
 
-    def save(self):
-        print(f'*** Saving Models {self.agent_name} parameters ...')
-        self.ActorNet.save(self.replay)
-        self.CriticNet.save(self.replay)
+    def print_metadata(self):
+        if os.path.exists(METADATA_FILE):
+            with open(METADATA_FILE, 'r') as f:
+                metadata = json.load(f)
+
+            print('\tModels metadata... ')
+            for model, date in metadata.items():
+                print(f"\t\t-->{model} : ")
+                for date, data in date.items():
+                    print(f"\t\t\t]{date}] : {data}")
+        else:
+            print(f"No metadata of the agent found.")
 
     def gpu_use(self):
         if not T.backends.mps.is_available():
@@ -199,3 +179,10 @@ class AC_Agent:
             self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         else:
             self.device = T.device("mps")
+
+
+    # def save(self):
+    #     print(f'*** Saving Models {self.agent_name} parameters ...')
+    #     self.ActorNet.save(self.replay)
+    #     self.CriticNet.save(self.replay)
+

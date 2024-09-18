@@ -5,7 +5,6 @@ import numpy as np
 from datetime import datetime
 
 def plot_rewards(reward_history, max_episodes,agent,plot, save_plot):
-
     average_reward = []
     for idx in range(len(reward_history)):
         avg_list = np.empty(shape=(1,), dtype=int)
@@ -27,7 +26,7 @@ def plot_rewards(reward_history, max_episodes,agent,plot, save_plot):
 
     if save_plot:
         current_date = datetime.now().strftime("%Y%m%d_%H-%M")
-        file_name = f"plots/{current_date}_rewards_{agent.agent_name}_level{agent.n_games}.png"
+        file_name = f"plots_AC/{current_date}_rewards_{agent.agent_name}_level{agent.n_games}.png"
 
         directory = os.path.dirname(file_name)
         if not os.path.exists(directory):

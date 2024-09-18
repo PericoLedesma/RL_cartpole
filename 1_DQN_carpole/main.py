@@ -16,7 +16,7 @@ MAX_EPISODE_STEPS = 500  # Default should be 500
 def main():
     # ------------------ ENVIRONMENT  ------------------ #
     env_class = EnvironmentClass(env_id='CartPole-v1',
-                                 render_mode='human',  # 'human ' or 'rgb_array'
+                                 render_mode='rgb_array',  # 'human ' or 'rgb_array'
                                  max_ep_steps=MAX_EPISODE_STEPS)
 
     # ------------------ AGENTS  ------------------ #
@@ -30,27 +30,30 @@ def main():
                                               epsilon_min=0.01,
                                               hidden_layers=layers)
 
+
     # ------------------ TRAINING  ------------------ #
     for agent in agents.values():
         env_class.run_env(agent,
-                          n_episodes=0,
+                          n_episodes=7500,
                           batch_size=64,
                           max_ep_steps=MAX_EPISODE_STEPS,
                           save_model=True,
                           plot=False,
-                          save_plot=True)
+                          save_plot=True,
+                          note='First test')
 
-    # ------------------  TEST  ------------------ #
-    print('\n', '=' * 60, '\n', ' ' * 25, 'TESTING ...', '\n', '=' * 60, )
-    for agent in agents.values():
-        agent.epsilon_max = 0.01
-        env_class.run_env(agent,
-                          n_episodes=10,
-                          batch_size=64,
-                          max_ep_steps=MAX_EPISODE_STEPS,
-                          save_model=False,
-                          plot=False,
-                          save_plot=False)
+
+    # # ------------------  TEST  ------------------ #
+    # print('\n', '=' * 60, '\n', ' ' * 25, 'TESTING ...', '\n', '=' * 60, )
+    # for agent in agents.values():
+    #     agent.epsilon_max = 0.01
+    #     env_class.run_env(agent,
+    #                       n_episodes=10,
+    #                       batch_size=64,
+    #                       max_ep_steps=MAX_EPISODE_STEPS,
+    #                       save_model=False,
+    #                       plot=False,
+    #                       save_plot=False)
 
     # ------------------ THE END  ------------------ #
     env_class.close()

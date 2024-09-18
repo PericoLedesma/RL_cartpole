@@ -1,9 +1,11 @@
 import gym
 import numpy as np
 import time
+import json
 
 from utils import *
 
+METADATA_FILE = 'data/agent_DQN_metadata'
 
 class EnvironmentClass:
     def __init__(self, env_id, render_mode, max_ep_steps):
@@ -12,8 +14,10 @@ class EnvironmentClass:
                             render_mode=render_mode)
         print('\tEnvironment Created. Action space: ', self.env.action_space, ' | Observation space: ', self.env.observation_space)
 
-    def run_env(self, agent, n_episodes, batch_size, max_ep_steps, save_model, plot, save_plot):
-        print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPISODES')
+        self.print_metadata()
+
+    def run_env(self, agent, n_episodes, batch_size, max_ep_steps, save_model, plot, save_plot, note):
+        print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPOCHS\n')
         start_time = time.perf_counter()
 
         reward_history, epsilon_history = [], []
@@ -45,8 +49,9 @@ class EnvironmentClass:
                 reward_history.append(score)
                 epsilon_history.append(agent.epsilon)
 
-                message = f"[Episode {i + 1}] Total Reward/steps = {score}| Average score = {np.mean(reward_history[-100:]):.2f}| Epsilon = {agent.epsilon:.2f}"
-                print('\r', message, end='')
+                message = f"[Epoch {i + 1}] Reward/steps = {score}| ave_score_50 = {np.mean(reward_history[-50:]):.2f}| Epsilon = {agent.epsilon:.2f}"
+                # print('\r', message, end='')
+                print(message)
 
                 # Long memory, replay memory
                 if len(agent.memory) > batch_size:
@@ -65,13 +70,26 @@ class EnvironmentClass:
             elapsed_time = time.perf_counter() - start_time
             print(f'\nTraining Completed, executed in {int(elapsed_time // 60)} minutes and {elapsed_time % 60:.2f} seconds', '\n', '-' * 60)
         if save_model:
-            agent.save()
-            agent.store_agent_parameters(np.mean(reward_history[-500:]))
+            # agent.save()
+            agent.store_agent_parameters(np.mean(reward_history[-500:]), np.mean(reward_history[-100:]), note)
         print('=' * 60)
         # ------------------ PLOTTING RESULTS ------------------ #
 
         plot_rewards(reward_history, epsilon_history, max_ep_steps, agent, plot, save_plot)
 
+    def print_metadata(self):
+        if os.path.exists(METADATA_FILE):
+            with open(METADATA_FILE, 'r') as f:
+                metadata = json.load(f)
+
+            print('\n====>Models metadata... ')
+            for model, date in metadata.items():
+                print(f"\t\t-->{model} : ")
+                for date, data in date.items():
+                    print(f"\t\t\t]{date}] : {data}")
+        else:
+            print(f"No metadata of the agent found.")
     def close(self):
         self.env.close()
         print('\n ****** Environment Closed ******')
+        self.print_metadata()

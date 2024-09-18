@@ -40,7 +40,7 @@ def plot_rewards(reward_history, epsilon_history, max_episodes, agent, plot, sav
 
     if save_plot:
         current_date = datetime.now().strftime("%Y%m%d_%H-%M")
-        file_name = f"plots/{current_date}_rewards_{agent.agent_name}_level{agent.n_games}.png"
+        file_name = f"plots_DQN/{current_date}_rewards_{agent.agent_name}_level{agent.n_games}.png"
 
         directory = os.path.dirname(file_name)
         if not os.path.exists(directory):
