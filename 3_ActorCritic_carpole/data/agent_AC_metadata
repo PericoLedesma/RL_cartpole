@@ -1,0 +1,66 @@
+{
+    "model_64_replayTrue": {
+        "2024-09-18 19:37": {
+            "n_games": 400,
+            "mean_score_500": 236.055,
+            "mean_score_100": 309.34,
+            "note": "NOTE"
+        }
+    },
+    "model_64_replayFalse": {
+        "2024-09-18 19:38": {
+            "n_games": 400,
+            "mean_score_500": 52.2925,
+            "mean_score_100": 83.28,
+            "note": "Whats new?"
+        }
+    },
+    "model_128_replayTrue": {
+        "2024-09-18 19:42": {
+            "n_games": 400,
+            "mean_score_500": 297.9325,
+            "mean_score_100": 249.13,
+            "note": "Whats new?"
+        }
+    },
+    "model_128_replayFalse": {
+        "2024-09-18 19:44": {
+            "n_games": 400,
+            "mean_score_500": 143.69,
+            "mean_score_100": 324.68,
+            "note": "Whats new?"
+        }
+    },
+    "model_256_replayTrue": {
+        "2024-09-18 19:51": {
+            "n_games": 400,
+            "mean_score_500": 407.035,
+            "mean_score_100": 500.0,
+            "note": "Whats new?"
+        }
+    },
+    "model_256_replayFalse": {
+        "2024-09-18 19:55": {
+            "n_games": 400,
+            "mean_score_500": 201.695,
+            "mean_score_100": 419.56,
+            "note": "Whats new?"
+        }
+    },
+    "model_64_128_replayTrue": {
+        "2024-09-18 20:02": {
+            "n_games": 400,
+            "mean_score_500": 277.1575,
+            "mean_score_100": 230.84,
+            "note": "Whats new?"
+        }
+    },
+    "model_64_128_replayFalse": {
+        "2024-09-18 20:04": {
+            "n_games": 400,
+            "mean_score_500": 110.8675,
+            "mean_score_100": 195.23,
+            "note": "Whats new?"
+        }
+    }
+}

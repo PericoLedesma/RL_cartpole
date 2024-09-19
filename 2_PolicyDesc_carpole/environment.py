@@ -47,7 +47,7 @@ class EnvironmentClass:
                 reward_history.append(score)
 
                 if eps % plot_eps_inf_every == 0:
-                    print(f"[Epoch {eps}] Reward = {score:.d}| avg_score_100={np.mean(reward_history[-100:]):.2f}| avg_score_50={np.mean(reward_history[-50:]):.2f}")
+                    print(f"[Epoch {eps}] Reward = {score:.0f}| avg_score_100={np.mean(reward_history[-100:]):.2f}| avg_score_50={np.mean(reward_history[-50:]):.2f}")
 
                 # Policy descent
                 agent.policy_update(eps_data)
