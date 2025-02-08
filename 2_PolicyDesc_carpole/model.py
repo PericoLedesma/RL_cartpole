@@ -29,7 +29,8 @@ class Network(nn.Module):
             for i in range(1, len(hidden_layers)):
                 layers.append(nn.Sequential(nn.Linear(hidden_layers[i - 1], hidden_layers[i]),
                                             nn.ReLU()))
-        layers.append(nn.Linear(hidden_layers[-1], output_size))
+        layers.append(nn.Sequential(nn.Linear(hidden_layers[-1], output_size),
+                      nn.Tanh()))
 
         # Register all layers using nn.ModuleList
         self.layers = nn.ModuleList(layers)

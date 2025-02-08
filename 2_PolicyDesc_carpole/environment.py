@@ -16,7 +16,7 @@ class EnvironmentClass:
         print('\tEnvironment Created. Action space: ', self.env.action_space, ' | Observation space: ', self.env.observation_space)
         self.print_metadata()
 
-    def run_env(self, agent, n_episodes, max_ep_steps, batch_size, plot_eps_inf_every, plot, save_plot, note) -> None:
+    def run_env(self, agent, n_episodes, max_ep_steps, plot_eps_inf_every, plot, save_plot, note) -> None:
         print('\n', '=' * 60, '\n', ' ' * 10, f'RUN {agent.agent_name} FOR {n_episodes} EPOCHS\n')
         start_time = time.perf_counter()
 

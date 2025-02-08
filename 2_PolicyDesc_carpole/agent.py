@@ -29,18 +29,21 @@ class GD_Agent:
 
         self.lr = lr  # Learning rate
         self.gamma = gamma  # Discount factor
-
         self.n_games = 0
 
-        self.PolicyPi = Network(env_class.env.observation_space.shape[0], hidden_layers, len(self.action_space), self.lr)
+        self.PolicyPi = Network(env_class.env.observation_space.shape[0],
+                                hidden_layers,
+                                len(self.action_space),
+                                self.lr)
 
         self.action_space = T.tensor(self.action_space, dtype=T.float).to(self.PolicyPi.device)
 
     def get_action(self, observation: np.ndarray) -> int:
-        state = T.tensor(np.array(observation), dtype=T.float).to(self.PolicyPi.device)
-        logits = self.PolicyPi.forward(state)
-        categorical_dist = Categorical(logits=logits)
-        return categorical_dist.sample().item() # index of the action= 0 or 1= action
+        with T.no_grad():
+            state = T.tensor(np.array(observation), dtype=T.float).to(self.PolicyPi.device)
+            logits = self.PolicyPi.forward(state)
+            categorical_dist = Categorical(logits=logits)
+            return categorical_dist.sample().item() # index of the action= 0 or 1= action
 
 
     def reward_to_go(self, rews):
@@ -85,7 +88,7 @@ class GD_Agent:
             metadata[self.agent_name][current_time]['n_games'] = self.n_games
             metadata[self.agent_name][current_time]['mean_score_500'] = mean_score_500
             metadata[self.agent_name][current_time]['mean_score_100'] = mean_score_100
-            metadata[self.agent_name][current_time]['note'] = 'NOTE'
+            metadata[self.agent_name][current_time]['note'] = note
 
         else:
             directory = os.path.dirname(METADATA_FILE)
@@ -97,17 +100,13 @@ class GD_Agent:
                     'n_games': self.n_games,
                     'mean_score_500': mean_score_500,
                     'mean_score_100': mean_score_100,
-                    'note': 'NOTE'}
+                    'note': note}
             }}
 
         with open(METADATA_FILE, 'w') as f:
             json.dump(metadata, f, indent=4)
-
         print(f'*** Model {self.agent_name} metadata saved | mean_score_500: {mean_score_500} | mean_score_100: {mean_score_100} ')
-        for model, date in metadata.items():
-            print(f"\t\t-->{model} : ")
-            for date, data in date.items():
-                print(f"\t\t\t]{date}] : {data}")
+
 
     def print_metadata(self):
         if os.path.exists(METADATA_FILE):

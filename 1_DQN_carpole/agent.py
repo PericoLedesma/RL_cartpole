@@ -191,10 +191,6 @@ class DQN_Agent:
 
         print(f'*** Model {self.agent_name} metadata saved | mean_score_500: {mean_score_500} | mean_score_100: {mean_score_100} ')
 
-
-
-
-
     def save(self):
         print(f'*** Saving model {self.agent_name} parameters ...', end=" ")
         self.Q_model.save()

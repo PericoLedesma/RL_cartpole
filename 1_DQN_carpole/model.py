@@ -55,9 +55,7 @@ class DeepQNetwork(nn.Module):
 
         # self.load_model()
 
-
-
-    def  forward(self, state) -> T.tensor:
+    def forward(self, state) -> T.tensor:
         '''
             return the Q-values for the possible actions
         '''

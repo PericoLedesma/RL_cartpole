@@ -31,7 +31,6 @@ def main():
         env_class.run_env(agent,
                           n_episodes=1000,
                           max_ep_steps=MAX_EPISODE_STEPS,
-                          batch_size=8,
                           plot_eps_inf_every=10,
                           plot=False,
                           save_plot=True,
